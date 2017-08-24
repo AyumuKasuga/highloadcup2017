@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -58,11 +59,13 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) (string, error) {
 
 	sort.Ints(visitedAtKeys)
 
-	var resultString string
+	var resultBuffer bytes.Buffer
 
 	for _, k := range visitedAtKeys {
-		resultString += visitList[k] + ","
+		resultBuffer.WriteString(visitList[k] + ",")
 	}
+
+	resultString := resultBuffer.String()
 
 	return resultString[:len(resultString)-1], nil
 }
