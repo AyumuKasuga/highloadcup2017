@@ -237,7 +237,7 @@ func locationsHandler(ctx *fasthttp.RequestCtx) {
 					if err != nil {
 						ctx.Response.SetStatusCode(400)
 					} else {
-						fmt.Fprintf(ctx, "{\"avg\": %.5f }", avg)
+						fmt.Fprintf(ctx, `{"avg":%.5f}`, avg)
 					}
 				} else {
 					ctx.Response.SetStatusCode(404)
