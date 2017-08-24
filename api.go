@@ -107,8 +107,10 @@ func usersHandler(ctx *fasthttp.RequestCtx) {
 			if err != nil {
 				ctx.Response.SetStatusCode(400)
 			} else {
-				allUsers[in.Id] = in
 				ctx.SetBody(emptyJson)
+				allUsersMutex.Lock()
+				allUsers[in.Id] = in
+				allUsersMutex.Unlock()
 			}
 		} else {
 			userID, _ := strconv.Atoi(urlStr)
@@ -158,8 +160,10 @@ func usersHandler(ctx *fasthttp.RequestCtx) {
 				if userItem.Email == "" || userItem.FirstName == "" || userItem.LastName == "" || userItem.Gender == "" || userItem.BirthDate == 0 {
 					ctx.Response.SetStatusCode(400)
 				} else {
-					allUsers[userID] = userItem
 					ctx.SetBody(emptyJson)
+					allUsersMutex.Lock()
+					allUsers[userID] = userItem
+					allUsersMutex.Unlock()
 				}
 			} else {
 				ctx.Response.SetStatusCode(404)
@@ -259,8 +263,10 @@ func locationsHandler(ctx *fasthttp.RequestCtx) {
 			if err != nil {
 				ctx.Response.SetStatusCode(400)
 			} else {
-				allLocations[in.Id] = in
 				ctx.SetBody(emptyJson)
+				allLocationsMutex.Lock()
+				allLocations[in.Id] = in
+				allLocationsMutex.Unlock()
 			}
 
 		} else {
@@ -304,8 +310,10 @@ func locationsHandler(ctx *fasthttp.RequestCtx) {
 				if locationItem.Place == "" || locationItem.Country == "" || locationItem.City == "" {
 					ctx.Response.SetStatusCode(400)
 				} else {
-					allLocations[locationID] = locationItem
 					ctx.SetBody(emptyJson)
+					allLocationsMutex.Lock()
+					allLocations[locationID] = locationItem
+					allLocationsMutex.Unlock()
 				}
 			} else {
 				ctx.Response.SetStatusCode(404)
@@ -348,6 +356,8 @@ func visitsHandler(ctx *fasthttp.RequestCtx) {
 			if err != nil {
 				ctx.Response.SetStatusCode(400)
 			} else {
+				ctx.SetBody(emptyJson)
+				allVisitsMutex.Lock()
 				allVisits[in.Id] = in
 				if val, ok := allUsersVisit[in.User]; ok {
 					allUsersVisit[in.User] = append(val, in.Id)
@@ -359,7 +369,7 @@ func visitsHandler(ctx *fasthttp.RequestCtx) {
 				} else {
 					allLocationsVisit[in.Location] = []int{in.Id}
 				}
-				ctx.SetBody(emptyJson)
+				allVisitsMutex.Unlock()
 			}
 
 		} else {
@@ -403,6 +413,8 @@ func visitsHandler(ctx *fasthttp.RequestCtx) {
 				if visitItem.Location == 0 || visitItem.User == 0 || visitItem.VisitedAt == 0 || visitItem.Mark == 0 {
 					ctx.Response.SetStatusCode(400)
 				} else {
+					ctx.SetBody(emptyJson)
+					allVisitsMutex.Lock()
 					if allVisits[visitID].User != visitItem.User {
 						for i, v := range allUsersVisit[allVisits[visitID].User] {
 							if v == visitID {
@@ -422,7 +434,7 @@ func visitsHandler(ctx *fasthttp.RequestCtx) {
 						}
 					}
 					allVisits[visitID] = visitItem
-					ctx.SetBody(emptyJson)
+					allVisitsMutex.Unlock()
 				}
 			} else {
 				ctx.Response.SetStatusCode(404)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/valyala/fasthttp"
@@ -16,6 +17,10 @@ var allLocations map[int]location
 var allVisits map[int]visit
 var allUsersVisit map[int][]int
 var allLocationsVisit map[int][]int
+var allUsersMutex = &sync.Mutex{}
+var allLocationsMutex = &sync.Mutex{}
+var allVisitsMutex = &sync.Mutex{}
+
 var currentTime int
 var errorBadRequest = errors.New("error")
 var routeUsers = []byte("/users/")
