@@ -28,7 +28,6 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) (string, error) {
 	country := string(ctx.FormValue("country"))
 
 	visitList := make(map[int]string)
-	visitedAtKeys := []int{}
 
 	for _, i := range allUsersVisit[userID] {
 		v := allVisits[i]
@@ -44,19 +43,28 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) (string, error) {
 				v.Mark,
 				allLocations[v.Location].Place,
 			)
-			visitedAtKeys = append(visitedAtKeys, v.VisitedAt)
 		}
+	}
+
+	if len(visitList) == 0 {
+		return "", nil
+	}
+
+	visitedAtKeys := make([]int, 0, len(visitList))
+
+	for k := range visitList {
+		visitedAtKeys = append(visitedAtKeys, k)
 	}
 
 	sort.Ints(visitedAtKeys)
 
-	sortedVisitList := make([]string, len(visitedAtKeys))
+	var resultString string
 
-	for i, k := range visitedAtKeys {
-		sortedVisitList[i] = visitList[k]
+	for _, k := range visitedAtKeys {
+		resultString += visitList[k] + ","
 	}
 
-	return strings.Join(sortedVisitList, ","), nil
+	return resultString[:len(resultString)-1], nil
 }
 
 func usersHandler(ctx *fasthttp.RequestCtx) {
@@ -73,11 +81,7 @@ func usersHandler(ctx *fasthttp.RequestCtx) {
 					if err != nil {
 						ctx.Response.SetStatusCode(400)
 					} else {
-						if len(userVisits) == 0 {
-							fmt.Fprintf(ctx, `{"visits": []}`)
-						} else {
-							fmt.Fprintf(ctx, `{"visits":[%s]}`, userVisits)
-						}
+						fmt.Fprintf(ctx, `{"visits":[%s]}`, userVisits)
 					}
 				} else {
 					ctx.Response.SetStatusCode(404)

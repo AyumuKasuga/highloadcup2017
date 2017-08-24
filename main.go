@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"log"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -60,8 +59,6 @@ func main() {
 		Handler:      requestHandler,
 		LogAllErrors: true,
 	}
-
-	debug.SetGCPercent(-1)
 
 	if err = server.Serve(ln); err != nil {
 		log.Fatalf("error in fasthttp Server: %s", err)
