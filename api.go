@@ -164,7 +164,7 @@ func usersHandler(ctx *fasthttp.RequestCtx) {
 					}
 					userItem.BirthDate = int(val.(float64))
 				}
-				if userItem.Email == "" || userItem.FirstName == "" || userItem.LastName == "" || userItem.Gender == "" || userItem.BirthDate == 0 {
+				if userItem.Email == "" || userItem.FirstName == "" || userItem.LastName == "" || userItem.Gender == "" {
 					ctx.Response.SetStatusCode(400)
 				} else {
 					ctx.SetBody(emptyJson)
