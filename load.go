@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 )
 
@@ -73,6 +75,20 @@ func loadFromFile() {
 			updateVisits(visitList.Visits)
 		}
 
+	}
+
+	file, err := os.Open("/tmp/data/options.txt")
+	if err != nil {
+		log.Println(err)
+	}
+	timestampBytes := make([]byte, 10)
+	_, err = file.Read(timestampBytes)
+	if err != nil {
+		log.Println(err)
+	}
+	currentTime, err = strconv.Atoi(string(timestampBytes))
+	if err != nil {
+		log.Println(err)
 	}
 	fmt.Println("ready!")
 }

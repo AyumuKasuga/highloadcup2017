@@ -5,8 +5,8 @@ import (
 	"errors"
 	"log"
 	"sync"
-	"time"
 
+	"github.com/hashicorp/golang-lru"
 	"github.com/valyala/fasthttp"
 	"github.com/valyala/tcplisten"
 )
@@ -25,12 +25,12 @@ var errorBadRequest = errors.New("error")
 var routeUsers = []byte("/users/")
 var routeLocations = []byte("/locations/")
 var emptyJson = []byte("{}")
+var cache, _ = lru.New(100 * 1024)
 
 const oneYear = 31557600
 
 func main() {
 	loadFromFile()
-	currentTime = int(time.Now().Unix())
 
 	requestHandler := func(ctx *fasthttp.RequestCtx) {
 		switch {

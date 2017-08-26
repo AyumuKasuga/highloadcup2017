@@ -11,19 +11,25 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-func getUserVisits(userID int, ctx *fasthttp.RequestCtx) (string, error) {
+func getUserVisits(userID int, ctx *fasthttp.RequestCtx) ([]byte, error) {
+	cacheKey := string(ctx.RequestURI())
+	cacheValue, cacheExists := cache.Get(cacheKey)
+	if cacheExists {
+		return cacheValue.([]byte), nil
+	}
+	resultBytes := []byte(`{"visits":[]}`)
 	fromDate, err := strconv.Atoi(string(ctx.FormValue("fromDate")))
 	if len(ctx.FormValue("fromDate")) != 0 && err != nil {
-		return "", errorBadRequest
+		return resultBytes, errorBadRequest
 	}
 	toDate, err := strconv.Atoi(string(ctx.FormValue("toDate")))
 	if len(ctx.FormValue("toDate")) != 0 && err != nil {
-		return "", errorBadRequest
+		return resultBytes, errorBadRequest
 	}
 
 	toDistance, err := strconv.Atoi(string(ctx.FormValue("toDistance")))
 	if len(ctx.FormValue("toDistance")) != 0 && err != nil {
-		return "", errorBadRequest
+		return resultBytes, errorBadRequest
 	}
 
 	country := string(ctx.FormValue("country"))
@@ -48,7 +54,7 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) (string, error) {
 	}
 
 	if len(visitList) == 0 {
-		return "", nil
+		return resultBytes, nil
 	}
 
 	visitedAtKeys := make([]int, 0, len(visitList))
@@ -65,9 +71,13 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) (string, error) {
 		resultBuffer.WriteString(visitList[k] + ",")
 	}
 
-	resultString := resultBuffer.String()
+	resultBytes = []byte(`{"visits":[` + resultBuffer.String()[:len(resultBuffer.String())-1] + `]}`)
 
-	return resultString[:len(resultString)-1], nil
+	if !cacheExists {
+		cache.Add(cacheKey, resultBytes)
+	}
+
+	return resultBytes, nil
 }
 
 func usersHandler(ctx *fasthttp.RequestCtx) {
@@ -84,7 +94,7 @@ func usersHandler(ctx *fasthttp.RequestCtx) {
 					if err != nil {
 						ctx.Response.SetStatusCode(400)
 					} else {
-						fmt.Fprintf(ctx, `{"visits":[%s]}`, userVisits)
+						ctx.SetBody(userVisits)
 					}
 				} else {
 					ctx.Response.SetStatusCode(404)
@@ -103,6 +113,9 @@ func usersHandler(ctx *fasthttp.RequestCtx) {
 			}
 		}
 	} else if ctx.IsPost() {
+		if cache.Len() != 0 {
+			cache.Purge()
+		}
 		if urlStr == "new" {
 			buf := ctx.PostBody()
 			if len(buf) == 0 || strings.Contains(string(buf), ": null") {
@@ -180,26 +193,32 @@ func usersHandler(ctx *fasthttp.RequestCtx) {
 	}
 }
 
-func getLocationAvg(locationID int, ctx *fasthttp.RequestCtx) (float64, error) {
+func getLocationAvg(locationID int, ctx *fasthttp.RequestCtx) ([]byte, error) {
+	cacheKey := string(ctx.RequestURI())
+	cacheValue, cacheExists := cache.Get(cacheKey)
+	if cacheExists {
+		return cacheValue.([]byte), nil
+	}
+	result := []byte(`{"avg":0.0}`)
 	fromDate, err := strconv.Atoi(string(ctx.FormValue("fromDate")))
 	if len(ctx.FormValue("fromDate")) != 0 && err != nil {
-		return .0, errorBadRequest
+		return result, errorBadRequest
 	}
 	toDate, err := strconv.Atoi(string(ctx.FormValue("toDate")))
 	if len(ctx.FormValue("toDate")) != 0 && err != nil {
-		return .0, errorBadRequest
+		return result, errorBadRequest
 	}
 	fromAge, err := strconv.Atoi(string(ctx.FormValue("fromAge")))
 	if len(ctx.FormValue("fromAge")) != 0 && err != nil {
-		return .0, errorBadRequest
+		return result, errorBadRequest
 	}
 	toAge, err := strconv.Atoi(string(ctx.FormValue("toAge")))
 	if len(ctx.FormValue("toAge")) != 0 && err != nil {
-		return .0, errorBadRequest
+		return result, errorBadRequest
 	}
 	gender := string(ctx.FormValue("gender"))
 	if gender != "" && gender != "f" && gender != "m" {
-		return .0, errorBadRequest
+		return result, errorBadRequest
 	}
 
 	var sum int
@@ -220,10 +239,16 @@ func getLocationAvg(locationID int, ctx *fasthttp.RequestCtx) (float64, error) {
 	}
 
 	if sum == 0 {
-		return .0, nil
+		return result, nil
 	}
 
-	return float64(sum) / count, nil
+	result = []byte(fmt.Sprintf(`{"avg":%.5f}`, float64(sum)/count))
+
+	if !cacheExists {
+		cache.Add(cacheKey, result)
+	}
+
+	return result, nil
 }
 
 func locationsHandler(ctx *fasthttp.RequestCtx) {
@@ -240,7 +265,7 @@ func locationsHandler(ctx *fasthttp.RequestCtx) {
 					if err != nil {
 						ctx.Response.SetStatusCode(400)
 					} else {
-						fmt.Fprintf(ctx, `{"avg":%.5f}`, avg)
+						ctx.SetBody(avg)
 					}
 				} else {
 					ctx.Response.SetStatusCode(404)
@@ -259,6 +284,9 @@ func locationsHandler(ctx *fasthttp.RequestCtx) {
 			}
 		}
 	} else if ctx.IsPost() {
+		if cache.Len() != 0 {
+			cache.Purge()
+		}
 		if urlStr == "new" {
 			buf := ctx.PostBody()
 			if len(buf) == 0 || strings.Contains(string(buf), ": null") {
@@ -352,6 +380,9 @@ func visitsHandler(ctx *fasthttp.RequestCtx) {
 			}
 		}
 	} else if ctx.IsPost() {
+		if cache.Len() != 0 {
+			cache.Purge()
+		}
 		if urlStr == "new" {
 			buf := ctx.PostBody()
 			if len(buf) == 0 || strings.Contains(string(buf), ": null") {
