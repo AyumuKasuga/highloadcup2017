@@ -34,7 +34,7 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) ([]byte, error) {
 
 	country := string(ctx.FormValue("country"))
 
-	visitList := make(map[int][]byte)
+	visitList := make(map[int][]byte, len(allUsersVisit[userID]))
 
 	for _, i := range allUsersVisit[userID] {
 		v := allVisits[i]
