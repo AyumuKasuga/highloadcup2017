@@ -34,7 +34,7 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) ([]byte, error) {
 
 	country := string(ctx.FormValue("country"))
 
-	visitList := make(map[int]string)
+	visitList := make(map[int][]byte)
 
 	for _, i := range allUsersVisit[userID] {
 		v := allVisits[i]
@@ -44,12 +44,7 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) ([]byte, error) {
 			toDistance != 0 && allLocations[v.Location].Distance >= toDistance
 
 		if !condition {
-			visitList[v.VisitedAt] = fmt.Sprintf(
-				`{"visited_at":%d,"mark":%d,"place":"%s"}`,
-				v.VisitedAt,
-				v.Mark,
-				allLocations[v.Location].Place,
-			)
+			visitList[v.VisitedAt] = []byte(fmt.Sprintf(`{"visited_at":%d,"mark":%d,"place":"%s"},`, v.VisitedAt, v.Mark, allLocations[v.Location].Place))
 		}
 	}
 
@@ -67,11 +62,17 @@ func getUserVisits(userID int, ctx *fasthttp.RequestCtx) ([]byte, error) {
 
 	var resultBuffer bytes.Buffer
 
-	for _, k := range visitedAtKeys {
-		resultBuffer.WriteString(visitList[k] + ",")
+	visitedAtKeysLength := len(visitedAtKeys) - 1
+
+	for i, k := range visitedAtKeys {
+		if visitedAtKeysLength == i {
+			visitList[k] = visitList[k][:len(visitList[k])-1]
+		}
+		resultBuffer.Write(visitList[k])
 	}
 
-	resultBytes = []byte(`{"visits":[` + resultBuffer.String()[:len(resultBuffer.String())-1] + `]}`)
+	resultBytes = append([]byte(`{"visits":[`), resultBuffer.Bytes()...)
+	resultBytes = append(resultBytes, []byte(`]}`)...)
 
 	if !cacheExists {
 		cache.Add(cacheKey, resultBytes)
